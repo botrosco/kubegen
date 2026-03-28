@@ -23,6 +23,8 @@ jobs:
       run: |
         mkdir bin
         TAG="${{ forge.ref_name }}"
+        echo ${{ forge.ref }}
+        echo ${{ forge.ref_name }}
         GOOS=linux GOARCH=amd64 go build -o bin/kubegen_${TAG}_linux ./cmd/kubegen
         GOOS=windows GOARCH=amd64 go build -o bin/kubegen_${TAG}_win.exe ./cmd/kubegen
         GOOS=darwin GOARCH=arm64 go build -o bin/kubegen_${TAG}_mac ./cmd/kubegen
