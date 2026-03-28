@@ -16,3 +16,11 @@ jobs:
       with:
        name: kubegen-bin
        path: kubegen
+    - uses: actions/forgejo-release@v2
+      with:
+        direction: upload
+        url: http:forgejo
+        repo: botrosco/kubegen
+        token: "989bf5a8423ee4ee33c421709ff120a46183d69a"
+        tag: test
+        release-dir: kubegen
