@@ -16,6 +16,8 @@ jobs:
       run: |
         echo ${{ forge.ref }}
         echo ${{ forge.ref_name }}
+        TAG="${{ forge.ref_name }}"
+        echo $TAG
     # # Setup
     # - uses: actions/checkout@v6
     # - uses: actions/setup-go@v6
