@@ -21,6 +21,6 @@ jobs:
         direction: upload
         url: http://forgejo
         repo: botrosco/kubegen
-        token: "989bf5a8423ee4ee33c421709ff120a46183d69a"
+        token: "8ea95fbfebb912bd149f711ee6eea136a6b542a1"
         tag: test
         release-dir: kubegen
