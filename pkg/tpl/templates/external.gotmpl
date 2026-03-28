@@ -1,0 +1,62 @@
+values:
+  - name: Name
+    type: string
+    description: Name of workload resources
+    required: true
+  - name: Namespace
+    type: string
+    description: Namespace of workload resources
+    required: true
+  - name: TargetPort 
+    type: int
+    description: Target port of upstream service
+    default: 0
+    required: true
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: istio-system
+    sectionName: https
+  hostnames: ["{{ .Name }}.rossd.net"]
+  rules:
+  - backendRefs:
+    - name: {{ .Name }}
+      port: 80
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  labels:
+    kubernetes.io/service-name: {{ .Name }}
+addressType: IPv4
+ports:
+  - name: http
+    appProtocol: http
+    protocol: TCP
+    port: {{ .TargetPort }}
+endpoints:
+  - addresses:
+      - "192.168.1.5"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    endpointslice.kubernetes.io/skip-mirror: "true"
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  publishNotReadyAddresses: true
