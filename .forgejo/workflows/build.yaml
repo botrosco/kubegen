@@ -17,11 +17,14 @@ jobs:
     - uses: actions/setup-go@v6
       with:
         go-version: "1.26" 
-    - run: mkdir bin
+
     # Build
-    - run: GOOS=linux GOARCH=amd64 go build -o bin/kubegen ./cmd/kubegen_${{ forge.ref_name }}_linux
-    - run: GOOS=windows GOARCH=amd64 go build -o bin/kubegen ./cmd/kubegen_${{ forge.ref_name }}_win
-    - run: GOOS=darwin GOARCH=arm64 go build -o bin/kubegen ./cmd/kubegen_${{ forge.ref_name }}_mac
+    - run: |
+        mkdir bin
+        GOOS=linux GOARCH=amd64 go build -o bin/kubegen_$${{ forge.ref_name }}_linux ./cmd/kubegen
+        GOOS=windows GOARCH=amd64 go build -o bin/kubegen_$${{ forge.ref_name }}_win.exe ./cmd/kubegen
+        GOOS=darwin GOARCH=arm64 go build -o bin/kubegen_$${{ forge.ref_name }}_mac ./cmd/kubegen
+
     # Publish
     - uses: actions/forgejo-release@v2
       with:
