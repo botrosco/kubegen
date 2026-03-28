@@ -12,10 +12,10 @@ jobs:
       with:
         go-version: "1.23" 
     - run: go build -o kubegen ./cmd/cli
-    - uses: actions/upload-artifact@v3
-      with:
-       name: kubegen-bin
-       path: kubegen
+    # - uses: actions/upload-artifact@v3
+    #   with:
+    #    name: kubegen-bin
+    #    path: kubegen
     - uses: actions/forgejo-release@v2
       with:
         direction: upload
