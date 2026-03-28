@@ -48,4 +48,4 @@ jobs:
         override: true
         release-dir: bin
         tag: latest
-        skip-assets: true
+        hide-archive-link: true
