@@ -15,7 +15,13 @@ It reads custom `.gotmpl` files that contain YAML frontmatter to define expected
 
 ---
 
-## Installation & Build
+## Installation
+
+Download latest `kubegen` from [releases](https://git.rossd.net/rosco/kubegen/releases)
+
+---
+
+## Build
 
 ### Prerequisites
 * Go 1.26 or higher
