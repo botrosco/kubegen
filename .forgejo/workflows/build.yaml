@@ -25,6 +25,6 @@ jobs:
         url: http://forgejo
         repo: rosco/kubegen
         token: "8ea95fbfebb912bd149f711ee6eea136a6b542a1"
-        tag: test
+        # tag: test
         release-dir: bin
         verbose: true
