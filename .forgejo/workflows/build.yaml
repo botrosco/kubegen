@@ -15,7 +15,7 @@ jobs:
       with:
         go-version: "1.23" 
     - run: mkdir bin
-    - run: go build -o bin/kubegen ./cmd/cli
+    - run: go build -o bin/kubegen ./cmd/kubegen
     # - uses: actions/upload-artifact@v3
     #   with:
     #    name: kubegen-bin
