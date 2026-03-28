@@ -1,12 +1,12 @@
 name: Build
 on:
-  push:
-    tags:
-      - "*"
+  # push:
+  #   tags:
+  #     - "*"
   #   branches:
   #     - "main"
-  # release:
-  #   types: [published]
+  release:
+    types: [published]
 
 jobs:
   build:
