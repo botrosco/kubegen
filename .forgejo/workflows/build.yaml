@@ -1,0 +1,15 @@
+on:
+	push:
+		branches:
+			- "main"
+
+jobs:
+	build:
+		steps:
+		- uses: actions/checkout@v6
+		- uses: actions/setup-go@v6
+		- run: go build -o kubegen ./cmd/cli
+		- uses: actions/upload-artifact@v4
+			with:
+				name: kubegen-bin
+				path: kubegen
