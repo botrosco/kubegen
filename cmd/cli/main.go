@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	template := flag.String("type", "default", "Use \"default\" or \"external\" template")
+	template := flag.String("template", "default", "Use \"default\" or \"external\" template")
 
 	name := flag.String("name", "", "Name of the Kubernetes resources (Required) [type:default,external]")
 	namespace := flag.String("namespace", "", "Kubernetes namespace (Required) [type:default,external]")
