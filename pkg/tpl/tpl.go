@@ -10,7 +10,6 @@ import (
 //go:embed templates/*.gotmpl
 var embeddedTemplates embed.FS
 
-// GetContent checks the local disk first, then falls back to embedded templates
 func GetContent(name string) (string, error) {
 	// Try reading from the local filesystem first
 	content, err := os.ReadFile(name)
@@ -35,7 +34,6 @@ func GetContent(name string) (string, error) {
 	return "", fmt.Errorf("template '%s' not found locally or in embedded templates", name)
 }
 
-// ListEmbedded returns a slice of template names bundled in the binary
 func ListEmbedded() ([]string, error) {
 	entries, err := embeddedTemplates.ReadDir("templates")
 	if err != nil {

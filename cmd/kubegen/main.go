@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-	// Require at least a command
 	if len(os.Args) < 2 {
 		printUsage()
 		os.Exit(1)
@@ -18,7 +17,6 @@ func main() {
 
 	command := os.Args[1]
 
-	// Handle the 'list' command first, as it doesn't need a template name
 	if command == "list" {
 		templates, err := tpl.ListEmbedded()
 		if err != nil {
@@ -33,7 +31,7 @@ func main() {
 		return
 	}
 
-	// For info and generate, we require the template name as well
+	// Info and generate requires template name
 	if len(os.Args) < 3 {
 		printUsage()
 		os.Exit(1)
@@ -46,21 +44,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 1. Get template content
+	// Get template content
 	content, err := tpl.GetContent(templateName)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// 2. Parse YAML and split template
+	// Parse YAML and split template
 	values, templateStr, err := parser.Parse(content)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// 3. Execute requested command
+	// Exec
 	if command == "info" {
 		generator.PrintInfo(values)
 	} else if command == "generate" {
@@ -76,5 +74,5 @@ func printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println("  kubegen list")
 	fmt.Println("  kubegen info <template-file-or-embedded-name>")
-	fmt.Println("  kubegen generate <template-file-or-embedded-name> [flags...]")
+	fmt.Println("  kubegen generate <template-file-or-embedded-name> [flags...] [-o|--output (Dir to put manifests)]")
 }
