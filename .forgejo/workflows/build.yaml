@@ -11,7 +11,8 @@ jobs:
     - uses: actions/setup-go@v6
       with:
         go-version: "1.23" 
-    - run: go build -o kubegen ./cmd/cli
+    - run: mkdir bin
+    - run: go build -o bin/kubegen ./cmd/cli
     # - uses: actions/upload-artifact@v3
     #   with:
     #    name: kubegen-bin
@@ -19,8 +20,8 @@ jobs:
     - uses: actions/forgejo-release@v2
       with:
         direction: upload
-        url: http://forgejo
+        url: https://forgejo.rossd.net
         repo: botrosco/kubegen
         token: "8ea95fbfebb912bd149f711ee6eea136a6b542a1"
         tag: test
-        release-dir: kubegen
+        release-dir: bin
