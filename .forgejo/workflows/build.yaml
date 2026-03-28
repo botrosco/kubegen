@@ -20,7 +20,7 @@ jobs:
     - uses: actions/forgejo-release@v2
       with:
         direction: upload
-        url: http://forgejo
+        url: https://forgejo.rossd.net
         repo: botrosco/kubegen
         token: "8ea95fbfebb912bd149f711ee6eea136a6b542a1"
         tag: V1
