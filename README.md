@@ -17,10 +17,10 @@ It reads custom `.gotmpl` files that contain YAML frontmatter to define expected
 
 ## Installation
 
-1. Download latest `kubegen` for your platform from [releases](https://git.rossd.net/rosco/kubegen/releases/tag/latest)
-4. *(Optional)* Move the binary to your PATH e.g. for linux:
+1. Download latest `kubegen_<version>_<os>` for your platform from [releases](https://git.rossd.net/rosco/kubegen/releases/tag/latest)
+2. *(Optional)* Move the binary to your PATH e.g. for linux:
    ```bash
-   mv kubegen_<version>_linux /usr/local/bin/kubegen
+   mv kubegen_v0.1.0_linux /usr/local/bin/kubegen
    ```
 
 ---
