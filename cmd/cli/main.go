@@ -2,35 +2,50 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"kubegen/pkg/generator"
 	"log"
 	"os"
-	"kubegen"
 )
 
 func main() {
-	// define cli flags
-	image := flag.string("image", "nginx:latest", "container image to use")
-	name := flag.string("name", "my-app", "name of the kubernetes resources")
-	namespace := flag.string("namespace", "default", "kubernetes namespace")
-	targetport := flag.int("target-port", 8080, "target port for the application")
-	createservice := flag.bool("create-service", false, "whether to generate a service manifest")
-	createhttproute := flag.bool("create-httproute", false, "whether to generate an httproute manifest")
+	image := flag.String("image", "", "Container image to use (Required)")
+	name := flag.String("name", "", "Name of the Kubernetes resources (Required)")
+	namespace := flag.String("namespace", "", "Kubernetes namespace (Required)")
 
-	flag.parse()
+	targetPort := flag.Int("target-port", 0, "Target port for the application (Required)")
+	createHTTPRoute := flag.Bool("create-httproute", false, "Generate an HTTPRoute manifest")
+	createSecret := flag.Bool("create-secret", false, "Create a Secret and inject it as an environment variable")
+	containerPath := flag.String("container-path", "", "Path to mount the config volume (leave empty to disable)")
+	useGpu := flag.Bool("use-gpu", false, "Add Intel GPU resource limits")
+	createLiveness := flag.Bool("create-liveness", false, "Add a liveness probe")
 
-	// use the exported struct from your package
-	config := generator.config{
-		image:           *image,
-		name:            *name,
-		namespace:       *namespace,
-		targetport:      *targetport,
-		createservice:   *createservice,
-		createhttproute: *createhttproute,
+	flag.Parse()
+
+	if *name == "" || *namespace == "" || *image == "" {
+		fmt.Println("Error: Missing required flags.")
+		fmt.Println("You must provide -name, -namespace, -image, and -target-port.")
+		fmt.Println()
+		flag.Usage()
+		os.Exit(1)
 	}
 
-	// call the exported function, passing os.stdout so it prints to the terminal
-	err := generator.generate(config, os.stdout)
+	// Build the config struct
+	config := generator.Config{
+		Image:           *image,
+		Name:            *name,
+		Namespace:       *namespace,
+		TargetPort:      *targetPort,
+		CreateHTTPRoute: *createHTTPRoute,
+		CreateSecret:    *createSecret,
+		ContainerPath:   *containerPath,
+		UseGpu:          *useGpu,
+		CreateLiveness:  *createLiveness,
+	}
+
+	// Run the generator
+	err := generator.Generate(config, os.Stdout)
 	if err != nil {
-		log.fatalf("error generating manifests: %v\n", err)
+		log.Fatalf("Error generating manifests: %v\n", err)
 	}
 }
