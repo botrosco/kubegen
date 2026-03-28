@@ -12,12 +12,6 @@ jobs:
   build:
     runs-on: default
     steps:
-    # - name: Debug
-    #   run: |
-    #     echo ${{ forge.ref }}
-    #     echo ${{ forge.ref_name }}
-    #     TAG="${{ forge.ref_name }}"
-    #     echo $TAG
     # Setup
     - uses: actions/checkout@v6
     - uses: actions/setup-go@v6
@@ -29,13 +23,13 @@ jobs:
       run: |
         mkdir bin
         TAG="${{ forge.ref_name }}"
-        GOOS=linux GOARCH=amd64 go build -o bin/kubegen_${TAG}_linux -v ./cmd/kubegen
-        GOOS=windows GOARCH=amd64 go build -o bin/kubegen_${TAG}_win.exe -v ./cmd/kubegen
-        GOOS=darwin GOARCH=arm64 go build -o bin/kubegen_${TAG}_mac -v ./cmd/kubegen
+        GOOS=linux GOARCH=amd64 go build -o bin/kubegen_${TAG}_linux ./cmd/kubegen
+        GOOS=windows GOARCH=amd64 go build -o bin/kubegen_${TAG}_win.exe ./cmd/kubegen
+        GOOS=darwin GOARCH=arm64 go build -o bin/kubegen_${TAG}_mac ./cmd/kubegen
         ls bin
 
     # Publish
-    - name: Publish to ${{ forge.ref_name }}
+    - name: Publish to version
       uses: actions/forgejo-release@v2
       with:
         direction: upload
@@ -54,3 +48,4 @@ jobs:
         override: true
         release-dir: bin
         tag: latest
+        skip-assets: true
