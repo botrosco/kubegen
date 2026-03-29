@@ -73,8 +73,8 @@ kubegen/
 
 ## Template Format
 
-Templates must contain a YAML frontmatter block defining the variables, followed by a `---` separator, and then the standard Go `text/template` body.
-Also see pre-packaged templates as examples: [pkg/tpl/templates](pkg/tpl/templates)
+Templates must contain a YAML frontmatter block defining the variables, followed by a `---` separator, and then the standard Go `text/template` body. 
+Also see pre-packaged templates: [pkg/tpl/templates](pkg/tpl/templates)
 
 **Example (`templates/deployment.gotmpl`):**
 ```yaml
