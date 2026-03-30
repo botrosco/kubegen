@@ -41,6 +41,11 @@ values:
     description: Whether to create httproute resource, target port must be set
     default: false
     required: false
+  - name: CreateConfigMap
+    type: bool
+    description: Whether to create configmap
+    default: false
+    required: false
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -70,10 +75,16 @@ spec:
               key: SECRET
         {{- end }}
         {{- end }}
-        {{- if .ContainerPath }}
+        {{- if or .ContainerPath .CreateConfigMap }}
         volumeMounts:
-        - mountPath: {{ .ContainerPath }}
-          name: {{ .Name }}-config
+          {{- if .ContainerPath }}
+          - mountPath: {{ .ContainerPath }}
+            name: {{ .Name }}-config
+          {{- end }}
+          {{- if .CreateConfigMap }}
+          - mountPath: /app/config
+            name: {{ .Name }}-config-cm
+          {{- end }}
         {{- end }}
         {{- if .UseGpu }}
         resources:
@@ -86,12 +97,30 @@ spec:
             path: /
             port: {{ .TargetPort }}
         {{- end }}
-      {{- if .ContainerPath }}
+      {{- if or .ContainerPath .CreateConfigMap }}
       volumes:
-      - name: {{ .Name }}-config
-        hostPath:
-          path: /opt/{{ .Namespace }}/{{ .Name }}/config
+        {{- if .ContainerPath }}
+        - name: {{ .Name }}-config
+          hostPath:
+            path: /opt/{{ .Namespace }}/{{ .Name }}/config
+        {{- end }}
+        {{- if .CreateConfigMap }}
+        - name: {{ .Name }}-config-cm
+          configMap:
+            name: {{ .Name }}-config-cm
+        {{- end }}
       {{- end }}
+{{- if .CreateConfigMap }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config-cm
+  namespace: {{ .Namespace }}
+data:
+  Caddyfile: |
+    # Insert Config here
+{{- end }}
 {{- if .CreateSecret }}
 ---
 apiVersion: v1
