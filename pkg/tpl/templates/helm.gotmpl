@@ -1,0 +1,48 @@
+values:
+  - name: Name
+    type: string
+    description: Name of helm chart
+    required: true
+  - name: Namespace
+    type: string
+    description: Namespace of workload resources
+    required: true
+  - name: OCI
+    type: bool
+    description: Use OCI for helm repo source type
+    default: true
+  - name: Url
+    type: string
+    description: URL of source
+    default: ""
+    required: true
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+spec:
+  {{- if .OCI }}
+  type: oci 
+  {{- end }}
+  url: {{ .Url }}
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+spec:
+  interval: 10m
+  timeout: 5m
+  chart:
+    spec:
+      chart: {{ .Name }}
+      sourceRef:
+        kind: HelmRepository
+        name: {{ .Name }}
+        namespace: {{ .Namespace}}
+      interval: 10m
+  # values:
+---
