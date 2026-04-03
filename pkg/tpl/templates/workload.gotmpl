@@ -46,6 +46,31 @@ values:
     description: Whether to create configmap
     default: false
     required: false
+  - name: CreateDB
+    type: bool
+    description: Whether to create DB resources (deployment, service, secret)
+    default: false
+    required: false
+  - name: DBImage
+    type: string
+    description: Image to be used by DB
+    default: ""
+    requried: false
+  - name: DBTargetPort
+    type: int
+    description: Port to be used by DB
+    default: 0
+    requried: false
+  - name: DBContainerPath
+    type: string
+    description: Path to be used by DB
+    default: ""
+    requried: false
+  - name: DBCreateSecret
+    type: bool
+    description: Whether to create DB secret
+    default: false
+    requried: false
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -65,10 +90,17 @@ spec:
       containers:
       - name: {{ .Name }}
         image: {{ .Image }}
-        {{- if .CreateSecret }}
+        {{- if or .CreateSecret .DBCreateSecret }}
         env:
         {{- if .CreateSecret }}
         - name: SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Name }}
+              key: SECRET
+        {{- end }}
+        {{- if .DBCreateSecret }}
+        - name: DB_SECRET
           valueFrom:
             secretKeyRef:
               name: {{ .Name }}
@@ -166,4 +198,72 @@ spec:
   - backendRefs:
     - name: {{ .Name }}
       port: 80
+{{- end }}
+{{- if .CreateDB }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-db
+  namespace: {{ .Namespace }}
+  labels:
+    used-by.app: {{ .Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}-db
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}-db
+        used-by.app: {{ .Name }}
+    spec:
+      containers:
+      - name: {{ .Name }}-db
+        image: {{ .DBImage }}
+        {{- if .DBCreateSecret }}
+        env:
+        - name: SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Name }}-db
+              key: SECRET
+        {{- end }}
+        {{- if .DBContainerPath }}
+        volumeMounts:
+          - mountPath: {{ .DBContainerPath }}
+            name: {{ .Name }}-db
+        {{- end }}
+      volumes:
+        - name: {{ .Name }}-db
+          hostPath:
+            path: /opt/{{ .Namespace }}/{{ .Name }}/db
+{{- if .DBCreateSecret }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Name }}-db
+  namespace: {{ .Namespace }}
+  labels:
+    app: {{ .Name }}-db
+type: Opaque
+stringData:
+  SECRET: Placeholder
+{{- end }}
+{{- if ne .DBTargetPort 0 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}-db
+  namespace: {{ .Namespace }}
+spec:
+  selector:
+    app: {{ .Name }}-db
+  ports:
+    - protocol: TCP
+      port: {{ .DBTargetPort }}
+{{- end }}
 {{- end }}
