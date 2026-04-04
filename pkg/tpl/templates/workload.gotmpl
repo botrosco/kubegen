@@ -165,7 +165,7 @@ metadata:
   name: {{ .Name }}-config-cm
   namespace: {{ .Namespace }}
 data:
-  Caddyfile: |
+  config.yaml: |
     # Insert Config here
 {{- end }}
 {{- if .CreateSecret }}
