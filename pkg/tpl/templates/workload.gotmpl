@@ -46,6 +46,14 @@ values:
     description: Whether to create configmap
     default: false
     required: false
+  - name: TolerationKey
+    type: string
+    description: Key for toleration
+    required: false
+  - name: TolerationValue
+    type: string
+    description: Value for toleration
+    required: false
   - name: CreateDB
     type: bool
     description: Whether to create DB resources (deployment, service, secret)
@@ -130,6 +138,13 @@ spec:
             port: {{ .TargetPort }}
         {{- end }}
       {{- if or .ContainerPath .CreateConfigMap }}
+      {{- if and .TolerationKey .TolerationValue }}
+      tolerations:
+      - key: "{{ .TolerationKey }}"
+        operator: "Equal"
+        value: "{{ .TolerationValue}}"
+        effect: "NoSchedule"
+      {{- end }}
       volumes:
         {{- if .ContainerPath }}
         - name: {{ .Name }}-config
