@@ -250,6 +250,13 @@ spec:
           - mountPath: {{ .DBContainerPath }}
             name: {{ .Name }}-db
         {{- end }}
+      {{- if and .TolerationKey .TolerationValue }}
+      tolerations:
+      - key: "{{ .TolerationKey }}"
+        operator: "Equal"
+        value: "{{ .TolerationValue}}"
+        effect: "NoSchedule"
+      {{- end }}
       volumes:
         - name: {{ .Name }}-db
           hostPath:
