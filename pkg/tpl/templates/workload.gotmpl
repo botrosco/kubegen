@@ -46,6 +46,11 @@ values:
     description: Whether to create configmap
     default: false
     required: false
+  - name: CreateConfigMapInitContainer
+    type: bool
+    description: Whether to create configmap init container to copy config map into another dir on startup
+    default: false
+    required: false
   - name: TolerationKey
     type: string
     description: Key for toleration
@@ -121,7 +126,7 @@ spec:
           - mountPath: {{ .ContainerPath }}
             name: {{ .Name }}-config
           {{- end }}
-          {{- if .CreateConfigMap }}
+          {{- if and .CreateConfigMap (not .CreateConfigMapInitContainer) }}
           - mountPath: /app/config
             name: {{ .Name }}-config-cm
           {{- end }}
@@ -137,13 +142,25 @@ spec:
             path: /
             port: {{ .TargetPort }}
         {{- end }}
-      {{- if or .ContainerPath .CreateConfigMap }}
       {{- if and .TolerationKey .TolerationValue }}
       tolerations:
       - key: "{{ .TolerationKey }}"
         operator: "Equal"
         value: "{{ .TolerationValue}}"
         effect: "NoSchedule"
+      {{- end }}
+      {{- if or .ContainerPath .CreateConfigMap }}
+      {{- if .CreateConfigMapInitContainer }}
+      initContainers:
+      - name: configmap-copy
+        image: busybox:latest
+        command: ["sh"]
+        args: ["-c","cp /kube/{{ .Name }}-config-cm/config.yaml /kube/{{ .Name }}-config/config.yaml"]
+        volumeMounts:
+          - mountPath: /kube/{{ .Name }}-config/
+            name: {{ .Name }}-config
+          - mountPath: /kube/{{ .Name }}-config-cm/
+            name: {{ .Name }}-config-cm
       {{- end }}
       volumes:
         {{- if .ContainerPath }}

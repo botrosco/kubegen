@@ -1,0 +1,13 @@
+values:
+  - name: Name
+    type: string
+    description: Name of namespace
+    required: true
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: {{ .Name }}
+  name: {{ .Name }}
+
