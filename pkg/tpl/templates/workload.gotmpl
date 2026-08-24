@@ -26,6 +26,26 @@ values:
     description: Whether to add GPU request to deployment
     default: false
     required: false
+  - name: CpuRequest
+    type: string
+    description: CPU request for the workload container (e.g. 250m)
+    default: "0m"
+    required: false
+  - name: CpuLimit
+    type: string
+    description: CPU limit for the workload container (e.g. 1)
+    default: "500m"
+    required: false
+  - name: MemoryRequest
+    type: string
+    description: Memory request for the workload container (e.g. 128Mi)
+    default: "256Mi"
+    required: false
+  - name: MemoryLimit
+    type: string
+    description: Memory limit for the workload container (e.g. 512Mi)
+    default: "512Mi"
+    required: false
   - name: CreateLiveness 
     type: bool
     description: Whether to create liveness on deployment
@@ -131,10 +151,29 @@ spec:
             name: {{ .Name }}-config-cm
           {{- end }}
         {{- end }}
-        {{- if .UseGpu }}
+        {{- if or .UseGpu .CpuRequest .CpuLimit .MemoryRequest .MemoryLimit }}
         resources:
+          {{- if or .CpuRequest .MemoryRequest }}
+          requests:
+            {{- if .CpuRequest }}
+            cpu: {{ .CpuRequest }}
+            {{- end }}
+            {{- if .MemoryRequest }}
+            memory: {{ .MemoryRequest }}
+            {{- end }}
+          {{- end }}
+          {{- if or .UseGpu .CpuLimit .MemoryLimit }}
           limits:
+            {{- if .CpuLimit }}
+            cpu: {{ .CpuLimit }}
+            {{- end }}
+            {{- if .MemoryLimit }}
+            memory: {{ .MemoryLimit }}
+            {{- end }}
+            {{- if .UseGpu }}
             gpu.intel.com/i915: "1"
+            {{- end }}
+          {{- end }}
         {{- end }}
         {{- if .CreateLiveness }}
         livenessProbe:
