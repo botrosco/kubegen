@@ -1,6 +1,6 @@
 # Kubegen
 
-**Kubegen** is a lightweight CLI tool written for generating Kubernetes manifests from templates. 
+**Kubegen** is a lightweight CLI tool written for generating Kubernetes manifests from templates.
 
 It reads custom `.gotmpl` files that contain YAML frontmatter to define expected variables. Based on this frontmatter, `kubegen` dynamically generates command-line flags, enforces required fields, handles default values, and outputs the rendered templates.
 
@@ -17,7 +17,7 @@ It reads custom `.gotmpl` files that contain YAML frontmatter to define expected
 
 ## Installation
 
-1. Download latest build for your platform from [releases](https://git.rossd.net/rosco/kubegen/releases/tag/latest)
+1. Download latest build for your platform from [releases](/releases/tag/latest)
 2. *(Optional)* Move the binary to your PATH e.g. for linux:
    ```bash
    mv kubegen_v0.1.0_linux /usr/local/bin/kubegen
@@ -60,20 +60,20 @@ kubegen/
 │       └── main.go           # CLI entry point
 └── pkg/
     ├── tpl/
-    │   ├── tpl.go            
+    │   ├── tpl.go
     │   └── templates/        # Put your .gotmpl files here
-    │       └── deployment.gotmpl 
+    │       └── deployment.gotmpl
     ├── parser/
-    │   └── parser.go         
+    │   └── parser.go
     └── generator/
-        └── generator.go      
+        └── generator.go
 ```
 
 ---
 
 ## Template Format
 
-Templates must contain a YAML frontmatter block defining the variables, followed by a `---` separator, and then the standard Go `text/template` body.   
+Templates must contain a YAML frontmatter block defining the variables, followed by a `---` separator, and then the standard Go `text/template` body.
 Also see pre-packaged templates: [pkg/tpl/templates](pkg/tpl/templates)
 
 **Example (`templates/deployment.gotmpl`):**
