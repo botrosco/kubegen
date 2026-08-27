@@ -66,6 +66,21 @@ values:
     description: Whether to create configmap
     default: false
     required: false
+  - name: ConfigMapPath
+    type: string
+    description: Mount path for the configmap volume
+    default: "/app/config"
+    required: false
+  - name: ConfigMapFile
+    type: string
+    description: File name inside the configmap (data key), e.g. config.yaml or config.toml
+    default: "config.yaml"
+    required: false
+  - name: SecretEnvName
+    type: string
+    description: Env var name and secret key created by CreateSecret
+    default: "SECRET"
+    required: false
   - name: CreateConfigMapInitContainer
     type: bool
     description: Whether to create configmap init container to copy config map into another dir on startup
@@ -88,22 +103,22 @@ values:
     type: string
     description: Image to be used by DB
     default: ""
-    requried: false
+    required: false
   - name: DBTargetPort
     type: int
     description: Port to be used by DB
     default: 0
-    requried: false
+    required: false
   - name: DBContainerPath
     type: string
     description: Path to be used by DB
     default: ""
-    requried: false
+    required: false
   - name: DBCreateSecret
     type: bool
     description: Whether to create DB secret
     default: false
-    requried: false
+    required: false
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -126,11 +141,11 @@ spec:
         {{- if or .CreateSecret .DBCreateSecret }}
         env:
         {{- if .CreateSecret }}
-        - name: SECRET
+        - name: {{ .SecretEnvName }}
           valueFrom:
             secretKeyRef:
               name: {{ .Name }}
-              key: SECRET
+              key: {{ .SecretEnvName }}
         {{- end }}
         {{- if .DBCreateSecret }}
         - name: DB_SECRET
@@ -147,7 +162,7 @@ spec:
             name: {{ .Name }}-config
           {{- end }}
           {{- if and .CreateConfigMap (not .CreateConfigMapInitContainer) }}
-          - mountPath: /app/config
+          - mountPath: {{ .ConfigMapPath }}
             name: {{ .Name }}-config-cm
           {{- end }}
         {{- end }}
@@ -175,7 +190,7 @@ spec:
             {{- end }}
           {{- end }}
         {{- end }}
-        {{- if .CreateLiveness }}
+        {{- if and .CreateLiveness (ne .TargetPort 0) }}
         livenessProbe:
           httpGet:
             path: /
@@ -194,7 +209,7 @@ spec:
       - name: configmap-copy
         image: busybox:latest
         command: ["sh"]
-        args: ["-c","cp /kube/{{ .Name }}-config-cm/config.yaml /kube/{{ .Name }}-config/config.yaml"]
+        args: ["-c","cp /kube/{{ .Name }}-config-cm/{{ .ConfigMapFile }} /kube/{{ .Name }}-config/{{ .ConfigMapFile }}"]
         volumeMounts:
           - mountPath: /kube/{{ .Name }}-config/
             name: {{ .Name }}-config
@@ -221,7 +236,7 @@ metadata:
   name: {{ .Name }}-config-cm
   namespace: {{ .Namespace }}
 data:
-  config.yaml: |
+  {{ .ConfigMapFile }}: |
     # Insert Config here
 {{- end }}
 {{- if .CreateSecret }}
@@ -235,7 +250,7 @@ metadata:
     app: {{ .Name }}
 type: Opaque
 stringData:
-  SECRET: Placeholder
+  {{ .SecretEnvName }}: Placeholder
 {{- end }}
 {{- if ne .TargetPort 0 }}
 ---

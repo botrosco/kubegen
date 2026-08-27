@@ -112,6 +112,10 @@ func GenerateManifests(values []parser.ValueDef, tmplStr string, args []string) 
 	}
 
 	if outputDir != "" {
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			return fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
+		}
+
 		docs := strings.Split(buf.String(), "\n---")
 
 		fmt.Printf("Writing manifests to directory: %s\n", outputDir)
