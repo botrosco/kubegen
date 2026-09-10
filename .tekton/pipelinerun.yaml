@@ -21,12 +21,10 @@ spec:
   workspaces:
   - name: source
     persistentVolumeClaim:
-      claimName: release-build-kubegen
-    subPath: src
+      claimName: release-build-kubegen-src
   - name: toolchain
     persistentVolumeClaim:
-      claimName: release-build-kubegen
-    subPath: toolchain
+      claimName: release-build-kubegen-toolchain
   params:
   - name: repo
     value: kubegen
