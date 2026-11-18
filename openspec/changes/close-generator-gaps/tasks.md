@@ -38,7 +38,7 @@
 - [x] 6.1 `pkg/tpl/templates/app_golden_test.go` with `testdata/app-values.yaml` and `testdata/app.golden.yaml`: render the bundle and compare byte-for-byte.
 - [x] 6.2 Full verification: `go build`, `gofmt -l .` clean, `go vet ./...`, `go test ./...` green, plus the existing smoke test (`list`, `info workload`, generate with `-o`, and the required-flag negative path).
 - [x] 6.3 Regenerate the `k8s-manifests` `opencloud` workload from the new `app` template and diff it against the deployed manifests; report the remaining hand steps (expected: sops encryption only) as the closure evidence for the register.
-- [ ] 6.4 Commit with `jj` and push `main` to Forgejo; state in the commit message which register entries close.
+- [x] 6.4 Commit with `jj` and push `main` to Forgejo; state in the commit message which register entries close.
 
 ## Workflow follow-up
 
