@@ -7,33 +7,37 @@ values:
     type: string
     description: Namespace of workload resources
     required: true
-  - name: TargetPort 
+  - name: TargetPort
     type: int
     description: Target port of upstream service
-    default: 0
     required: true
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: {{ .Name }}
-  namespace: {{ .Namespace }}
-spec:
-  parentRefs:
-  - name: gateway
-    namespace: istio-system
-    sectionName: https
-  hostnames: ["{{ .Name }}.rossd.net"]
-  rules:
-  - backendRefs:
-    - name: {{ .Name }}
-      port: 80
+  - name: Address
+    type: string
+    description: Address of the host already running the application
+    required: true
+  - name: Hostnames
+    type: list
+    description: Route hostnames (values file); no hostname is invented when empty
+    default: []
+  - name: GatewayParents
+    type: list
+    description: Route parents as {name, namespace, sectionName}
+    default:
+      - name: gateway
+        namespace: istio-system
+        sectionName: https
+  - name: EmitNamespace
+    type: bool
+    description: Emit metadata.namespace (the consuming repo may declare the namespace in a kustomization instead)
+    default: false
 ---
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
   name: {{ .Name }}
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
   labels:
     kubernetes.io/service-name: {{ .Name }}
 addressType: IPv4
@@ -44,7 +48,7 @@ ports:
     port: {{ .TargetPort }}
 endpoints:
   - addresses:
-      - "192.168.1.5"
+      - {{ .Address | quote }}
 ---
 apiVersion: v1
 kind: Service
@@ -52,11 +56,38 @@ metadata:
   labels:
     endpointslice.kubernetes.io/skip-mirror: "true"
   name: {{ .Name }}
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
 spec:
   ports:
-  - name: http
-    port: 80
-    protocol: TCP
-    targetPort: 80
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
   publishNotReadyAddresses: true
+{{- if not (isZero .Hostnames) }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Name }}
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+spec:
+  parentRefs:
+{{- range .GatewayParents }}
+    - name: {{ .name }}
+      namespace: {{ .namespace }}
+      sectionName: {{ .sectionName }}
+{{- end }}
+  hostnames:
+{{- range .Hostnames }}
+    - {{ . | quote }}
+{{- end }}
+  rules:
+    - backendRefs:
+        - name: {{ .Name }}
+          port: 80
+{{- end }}

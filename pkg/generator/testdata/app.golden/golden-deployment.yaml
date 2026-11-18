@@ -1,0 +1,98 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: golden
+  labels:
+    app: golden
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: golden
+  template:
+    metadata:
+      labels:
+        app: golden
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      initContainers:
+        - name: chown-volumes
+          image: ghcr.io/example/golden:1.4.2 # {"$imagepolicy": "apps:golden-policy"}
+          command:
+            - chown
+            - -R
+            - 1000:1000
+            - /etc/golden
+            - /var/lib/golden
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: golden-config
+              mountPath: /etc/golden
+            - name: golden-data
+              mountPath: /var/lib/golden
+      containers:
+        - name: golden
+          image: ghcr.io/example/golden:1.4.2 # {"$imagepolicy": "apps:golden-policy"}
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - golden init || true; golden server
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GOLDEN_URL
+              value: "https://golden.rossd.net"
+            - name: GOLDEN_INSECURE
+              value: "false"
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: golden-secret
+                  key: ADMIN_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 4
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          volumeMounts:
+            - name: golden-config
+              mountPath: /etc/golden
+            - name: golden-data
+              mountPath: /var/lib/golden
+      volumes:
+        - name: golden-config
+          hostPath:
+            path: /opt/apps/golden/config
+            type: DirectoryOrCreate
+        - name: golden-data
+          hostPath:
+            path: /opt/apps/golden/data
+            type: DirectoryOrCreate

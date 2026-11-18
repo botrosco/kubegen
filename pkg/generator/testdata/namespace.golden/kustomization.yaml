@@ -1,0 +1,21 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: golden
+namespace: golden
+resources:
+  - namespace.yaml
+components:
+  - ../../components/image-update-automation
+patches:
+  - target:
+      kind: ImageUpdateAutomation
+      name: image-update
+    patch: |-
+      - op: replace
+        path: /spec/update/path
+        value: ./live/golden
+      - op: replace
+        path: /spec/interval
+        value: 50m

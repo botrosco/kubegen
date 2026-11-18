@@ -1,0 +1,51 @@
+Name: golden
+Namespace: apps
+Image: ghcr.io/example/golden:1.4.2
+TargetPort: 8080
+Hostnames: ["golden.rossd.net"]
+GatewayParents:
+  - name: gateway
+    namespace: istio-system
+    sectionName: https
+CreateExternalRoute: true
+RunAsUser: 1000
+RunAsGroup: 1000
+Strategy: Recreate
+Command: ["/bin/sh"]
+Args: ["-c", "golden init || true; golden server"]
+CreateReadiness: true
+CreateLiveness: true
+CpuRequest: 100m
+CpuLimit: 1000m
+MemoryRequest: 512Mi
+MemoryLimit: 2Gi
+SecretKeys: ["ADMIN_PASSWORD", "API_TOKEN"]
+ImagePolicyType: semver
+ImagePolicyFilter: '^[0-9]+\.[0-9]+\.[0-9]+$'
+ImagePolicyRange: '>=1.0.0 <2.0.0'
+Volumes:
+  - name: golden-config
+    mountPath: /etc/golden
+    hostPath: /opt/apps/golden/config
+    type: DirectoryOrCreate
+  - name: golden-data
+    mountPath: /var/lib/golden
+    hostPath: /opt/apps/golden/data
+    type: DirectoryOrCreate
+InitContainers:
+  - name: chown-volumes
+    image: ghcr.io/example/golden:1.4.2
+    marker: true
+    command: ["chown", "-R", "1000:1000", "/etc/golden", "/var/lib/golden"]
+    runAsUser: 0
+    runAsGroup: 0
+    allowPrivilegeEscalation: false
+    volumeMounts:
+      - name: golden-config
+        mountPath: /etc/golden
+      - name: golden-data
+        mountPath: /var/lib/golden
+Env:
+  - {name: GOLDEN_URL, value: "https://golden.rossd.net"}
+  - {name: GOLDEN_INSECURE, value: "false"}
+  - {name: ADMIN_PASSWORD, secretName: golden-secret, secretKey: ADMIN_PASSWORD}

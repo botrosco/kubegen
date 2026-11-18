@@ -3,11 +3,55 @@ values:
     type: string
     description: Name of namespace
     required: true
+  - name: Interval
+    type: string
+    description: ImageUpdateAutomation interval for this namespace; must not collide with another namespace's
+    required: true
+  - name: EmitNamespace
+    type: bool
+    description: Emit metadata.namespace on the Namespace object (usually pointless, but kept for symmetry)
+    default: false
+  - name: ComponentPath
+    type: string
+    description: Path to the image-update-automation kustomize component
+    default: "../../components/image-update-automation"
+  - name: UpdatePath
+    type: string
+    description: Value for the ImageUpdateAutomation spec.update.path patch
+    default: ""
+  - name: NamespaceFileName
+    type: string
+    description: File name for the Namespace object, which the generated kustomization lists
+    default: "namespace.yaml"
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: {{ .Name }}
+  annotations:
+    kubegen.io/filename: {{ .NamespaceFileName }}
   labels:
     kubernetes.io/metadata.name: {{ .Name }}
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
   name: {{ .Name }}
-
+  annotations:
+    kubegen.io/filename: kustomization.yaml
+namespace: {{ .Name }}
+resources:
+  - {{ .NamespaceFileName }}
+components:
+  - {{ .ComponentPath }}
+patches:
+  - target:
+      kind: ImageUpdateAutomation
+      name: image-update
+    patch: |-
+      - op: replace
+        path: /spec/update/path
+        value: {{ default (printf "./live/%s" .Name) .UpdatePath }}
+      - op: replace
+        path: /spec/interval
+        value: {{ .Interval }}

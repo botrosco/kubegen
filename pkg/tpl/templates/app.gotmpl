@@ -1,0 +1,498 @@
+values:
+  - name: Name
+    type: string
+    description: Application name, used for every object's metadata.name and the app label
+    required: true
+  - name: Namespace
+    type: string
+    description: Namespace the app lives in (used for cross-references, not emitted as metadata.namespace)
+    required: true
+  - name: Image
+    type: string
+    description: Container image including its tag
+    required: true
+  - name: TargetPort
+    type: int
+    description: Container port the Service targets
+    required: true
+  - name: EmitNamespace
+    type: bool
+    description: Emit metadata.namespace on every object (off by default; the namespace belongs in the folder kustomization)
+    default: false
+  - name: Replicas
+    type: int
+    description: Deployment replicas
+    default: 1
+  - name: Hostnames
+    type: list
+    description: Route hostnames; no route is emitted when empty
+    default: []
+  - name: GatewayParents
+    type: list
+    description: Route parents as {name, namespace, sectionName}
+    default:
+      - name: gateway
+        namespace: istio-system
+        sectionName: https
+  - name: CreateExternalRoute
+    type: bool
+    description: Also emit <name>-ext on gateway-external, backed by the external SSO proxy
+    default: false
+  - name: ExternalBackendName
+    type: string
+    description: Service name of the external SSO proxy
+    default: "netbird-reverse-proxy"
+  - name: ExternalBackendNamespace
+    type: string
+    description: Namespace of the external SSO proxy Service
+    default: "netbird"
+  - name: ExternalBackendPort
+    type: int
+    description: Port of the external SSO proxy Service
+    default: 443
+  - name: Env
+    type: list
+    description: Container env as {name, value} or {name, secretName, secretKey}
+    default: []
+  - name: SecretKeys
+    type: list
+    description: Secret keys to generate in <name>-secret (env wiring stays with the Env list)
+    default: []
+  - name: Volumes
+    type: list
+    description: Volumes as {name, mountPath, hostPath, type, readOnly, configMap}
+    default: []
+  - name: Command
+    type: list
+    description: Container command, replacing the image entrypoint
+    default: []
+  - name: Args
+    type: list
+    description: Container args
+    default: []
+  - name: InitContainers
+    type: list
+    description: Init containers as {name, image, marker, command, args, runAsUser, runAsGroup, allowPrivilegeEscalation, volumeMounts}
+    default: []
+  - name: RunAsUser
+    type: int
+    description: Pod securityContext runAsUser (0 omits it)
+    default: 0
+  - name: RunAsGroup
+    type: int
+    description: Pod securityContext runAsGroup (0 omits it)
+    default: 0
+  - name: Strategy
+    type: string
+    description: Deployment strategy type, e.g. Recreate for single-writer data
+    default: ""
+  - name: TerminationGracePeriodSeconds
+    type: int
+    description: Pod termination grace period in seconds (0 omits it)
+    default: 0
+  - name: CpuRequest
+    type: string
+    description: CPU request; zero values are omitted rather than rendered
+    default: ""
+  - name: CpuLimit
+    type: string
+    description: CPU limit
+    default: ""
+  - name: MemoryRequest
+    type: string
+    description: Memory request; zero values are omitted rather than rendered
+    default: ""
+  - name: MemoryLimit
+    type: string
+    description: Memory limit
+    default: ""
+  - name: HealthPath
+    type: string
+    description: HTTP path used by the generated probes
+    default: "/"
+  - name: CreateReadiness
+    type: bool
+    description: Emit a readiness probe on HealthPath
+    default: false
+  - name: ReadinessInitialDelaySeconds
+    type: int
+    description: Readiness probe initial delay
+    default: 15
+  - name: ReadinessPeriodSeconds
+    type: int
+    description: Readiness probe period
+    default: 15
+  - name: ReadinessFailureThreshold
+    type: int
+    description: Readiness probe failure threshold
+    default: 4
+  - name: CreateLiveness
+    type: bool
+    description: Emit a liveness probe on HealthPath
+    default: false
+  - name: LivenessInitialDelaySeconds
+    type: int
+    description: Liveness probe initial delay
+    default: 120
+  - name: LivenessPeriodSeconds
+    type: int
+    description: Liveness probe period
+    default: 30
+  - name: LivenessFailureThreshold
+    type: int
+    description: Liveness probe failure threshold
+    default: 5
+  - name: ImageRepositoryInterval
+    type: string
+    description: Poll interval for the ImageRepository
+    default: "5h"
+  - name: ImagePolicyType
+    type: string
+    description: Image tracking shape -- semver, numerical, or none (pinned tag, repository only)
+    default: "none"
+  - name: ImagePolicyFilter
+    type: string
+    description: filterTags.pattern for the ImagePolicy
+    default: ""
+  - name: ImagePolicyRange
+    type: string
+    description: semver.range, bounded to the major line (e.g. ">=9.0.0 <10.0.0")
+    default: ""
+  - name: ImagePolicyExtract
+    type: string
+    description: filterTags.extract for a numerical policy (e.g. "$build")
+    default: ""
+  - name: EmitKustomization
+    type: bool
+    description: Emit the app folder's kustomization.yaml listing the files this render wrote
+    default: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+  labels:
+    app: {{ .Name }}
+spec:
+  replicas: {{ .Replicas }}
+{{- if .Strategy }}
+  strategy:
+    type: {{ .Strategy }}
+{{- end }}
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+{{- if or .RunAsUser .RunAsGroup .TerminationGracePeriodSeconds }}
+{{- if or .RunAsUser .RunAsGroup }}
+      securityContext:
+{{- if .RunAsUser }}
+        runAsUser: {{ .RunAsUser }}
+{{- end }}
+{{- if .RunAsGroup }}
+        runAsGroup: {{ .RunAsGroup }}
+{{- end }}
+{{- end }}
+{{- if .TerminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .TerminationGracePeriodSeconds }}
+{{- end }}
+{{- end }}
+{{- if .InitContainers }}
+      initContainers:
+{{- range .InitContainers }}
+        - name: {{ .name }}
+          image: {{ .image }}{{- if and .marker (ne (lower $.ImagePolicyType) "none") }} # {"$imagepolicy": "{{ $.Namespace }}:{{ $.Name }}-policy"}{{- end }}
+{{- with .command }}
+          command:
+{{- range . }}
+            - {{ . }}
+{{- end }}
+{{- end }}
+{{- with .args }}
+          args:
+{{- range . }}
+            - {{ . }}
+{{- end }}
+{{- end }}
+{{- if or (hasKey . "runAsUser") (hasKey . "runAsGroup") (hasKey . "allowPrivilegeEscalation") }}
+          securityContext:
+{{- if hasKey . "runAsUser" }}
+            runAsUser: {{ .runAsUser }}
+{{- end }}
+{{- if hasKey . "runAsGroup" }}
+            runAsGroup: {{ .runAsGroup }}
+{{- end }}
+{{- if hasKey . "allowPrivilegeEscalation" }}
+            allowPrivilegeEscalation: {{ .allowPrivilegeEscalation }}
+{{- end }}
+{{- end }}
+{{- with .volumeMounts }}
+          volumeMounts:
+{{- range . }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+      containers:
+        - name: {{ .Name }}
+          image: {{ .Image }}{{- if ne (lower .ImagePolicyType) "none" }} # {"$imagepolicy": "{{ .Namespace }}:{{ .Name }}-policy"}{{- end }}
+{{- with .Command }}
+          command:
+{{- range . }}
+            - {{ . }}
+{{- end }}
+{{- end }}
+{{- with .Args }}
+          args:
+{{- range . }}
+            - {{ . }}
+{{- end }}
+{{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .TargetPort }}
+{{- if or .Env .SecretKeys }}
+          env:
+{{- range .Env }}
+{{- if .secretKey }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .secretKey }}
+{{- else }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if or (not (isZero .CpuRequest)) (not (isZero .CpuLimit)) (not (isZero .MemoryRequest)) (not (isZero .MemoryLimit)) }}
+          resources:
+{{- if or (not (isZero .CpuRequest)) (not (isZero .MemoryRequest)) }}
+            requests:
+{{- if not (isZero .CpuRequest) }}
+              cpu: {{ .CpuRequest }}
+{{- end }}
+{{- if not (isZero .MemoryRequest) }}
+              memory: {{ .MemoryRequest }}
+{{- end }}
+{{- end }}
+{{- if or (not (isZero .CpuLimit)) (not (isZero .MemoryLimit)) }}
+            limits:
+{{- if not (isZero .CpuLimit) }}
+              cpu: {{ .CpuLimit }}
+{{- end }}
+{{- if not (isZero .MemoryLimit) }}
+              memory: {{ .MemoryLimit }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if .CreateReadiness }}
+          readinessProbe:
+            httpGet:
+              path: {{ .HealthPath }}
+              port: {{ .TargetPort }}
+            initialDelaySeconds: {{ .ReadinessInitialDelaySeconds }}
+            periodSeconds: {{ .ReadinessPeriodSeconds }}
+            timeoutSeconds: 5
+            failureThreshold: {{ .ReadinessFailureThreshold }}
+{{- end }}
+{{- if .CreateLiveness }}
+          livenessProbe:
+            httpGet:
+              path: {{ .HealthPath }}
+              port: {{ .TargetPort }}
+            initialDelaySeconds: {{ .LivenessInitialDelaySeconds }}
+            periodSeconds: {{ .LivenessPeriodSeconds }}
+            timeoutSeconds: 5
+            failureThreshold: {{ .LivenessFailureThreshold }}
+{{- end }}
+{{- if .Volumes }}
+          volumeMounts:
+{{- range .Volumes }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+{{- if .readOnly }}
+              readOnly: true
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if .Volumes }}
+      volumes:
+{{- range .Volumes }}
+        - name: {{ .name }}
+{{- if .configMap }}
+          configMap:
+            name: {{ .configMap }}
+{{- else }}
+          hostPath:
+            path: {{ .hostPath }}
+            type: {{ default "DirectoryOrCreate" .type }}
+{{- end }}
+{{- end }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+  labels:
+    app: {{ .Name }}
+spec:
+  selector:
+    app: {{ .Name }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: {{ .TargetPort }}
+{{- if not (isZero .Hostnames) }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Name }}
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+spec:
+  parentRefs:
+{{- range .GatewayParents }}
+    - name: {{ .name }}
+      namespace: {{ .namespace }}
+      sectionName: {{ .sectionName }}
+{{- end }}
+  hostnames:
+{{- range .Hostnames }}
+    - {{ . | quote }}
+{{- end }}
+  rules:
+    - backendRefs:
+        - name: {{ .Name }}
+          port: 80
+{{- end }}
+{{- if and .CreateExternalRoute (not (isZero .Hostnames)) }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Name }}-ext
+  annotations:
+    kubegen.io/filename: {{ .Name }}-httproute-ext.yaml
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+spec:
+  parentRefs:
+    - name: gateway-external
+      namespace: istio-system
+      sectionName: https
+  hostnames:
+{{- range .Hostnames }}
+    - {{ . | quote }}
+{{- end }}
+  rules:
+    - backendRefs:
+        - name: {{ .ExternalBackendName }}
+          namespace: {{ .ExternalBackendNamespace }}
+          port: {{ .ExternalBackendPort }}
+{{- end }}
+{{- if .SecretKeys }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Name }}-secret
+  annotations:
+    kubegen.io/filename: {{ .Name }}-secret.yaml
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+  labels:
+    app: {{ .Name }}
+type: Opaque
+stringData:
+{{- range .SecretKeys }}
+  {{ . }}: Placeholder
+{{- end }}
+{{- end }}
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: {{ .Name }}
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+spec:
+  image: {{ repoOnly .Image }}
+  interval: {{ .ImageRepositoryInterval }}
+{{- if ne (lower .ImagePolicyType) "none" }}
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: {{ .Name }}-policy
+  annotations:
+    kubegen.io/filename: {{ .Name }}-imagepolicy.yaml
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+spec:
+  imageRepositoryRef:
+    name: {{ .Name }}
+{{- if .ImagePolicyFilter }}
+  filterTags:
+    pattern: {{ .ImagePolicyFilter | squote }}
+{{- if .ImagePolicyExtract }}
+    extract: {{ .ImagePolicyExtract | squote }}
+{{- end }}
+{{- end }}
+  policy:
+{{- if eq (lower .ImagePolicyType) "semver" }}
+    semver:
+      range: {{ .ImagePolicyRange | squote }}
+{{- else if eq (lower .ImagePolicyType) "numerical" }}
+    numerical:
+      order: asc
+{{- else }}
+{{- fail (printf "ImagePolicyType %q is not one of semver, numerical, none" .ImagePolicyType) }}
+{{- end }}
+{{- end }}
+{{- if .EmitKustomization }}
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: {{ .Name }}
+  annotations:
+    kubegen.io/filename: kustomization.yaml
+resources:
+  - {{ .Name }}-deployment.yaml
+{{- if not (isZero .Hostnames) }}
+  - {{ .Name }}-httproute.yaml
+{{- if .CreateExternalRoute }}
+  - {{ .Name }}-httproute-ext.yaml
+{{- end }}
+{{- end }}
+{{- if ne (lower .ImagePolicyType) "none" }}
+  - {{ .Name }}-imagepolicy.yaml
+{{- end }}
+  - {{ .Name }}-imagerepository.yaml
+{{- if .SecretKeys }}
+  - {{ .Name }}-secret.yaml
+{{- end }}
+  - {{ .Name }}-service.yaml
+{{- end }}

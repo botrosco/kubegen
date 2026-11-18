@@ -1,0 +1,13 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: golden
+resources:
+  - golden-deployment.yaml
+  - golden-httproute.yaml
+  - golden-httproute-ext.yaml
+  - golden-imagepolicy.yaml
+  - golden-imagerepository.yaml
+  - golden-secret.yaml
+  - golden-service.yaml

@@ -11,81 +11,147 @@ values:
     type: string
     description: Image used in deployment
     required: true
+  - name: EmitNamespace
+    type: bool
+    description: Emit metadata.namespace (the consuming repo may declare the namespace in a kustomization instead)
+    default: false
+  - name: Hostnames
+    type: list
+    description: Route hostnames (values file); no hostname is invented when empty
+    default: []
+  - name: GatewayParents
+    type: list
+    description: Route parents as {name, namespace, sectionName}
+    default:
+      - name: gateway
+        namespace: istio-system
+        sectionName: https
+  - name: CreateExternalRoute
+    type: bool
+    description: Emit an additional <name>-ext HTTPRoute whose backend is the external SSO proxy
+    default: false
+  - name: ExternalBackendName
+    type: string
+    description: Service name of the external SSO proxy for CreateExternalRoute
+    default: "netbird-reverse-proxy"
+  - name: ExternalBackendNamespace
+    type: string
+    description: Namespace of the external SSO proxy Service
+    default: "netbird"
+  - name: ExternalBackendPort
+    type: int
+    description: Port of the external SSO proxy Service
+    default: 443
   - name: CreateSecret
     type: bool
     description: Whether to create secret and env var
     default: false
-    required: false
-  - name: ContainerPath
-    type: string
-    description: If set, creates volume and volumeMount to the container path
-    default: ""
-    required: false
-  - name: UseGpu
-    type: bool
-    description: Whether to add GPU request to deployment
-    default: false
-    required: false
-  - name: CpuRequest
-    type: string
-    description: CPU request for the workload container (e.g. 250m)
-    default: "0m"
-    required: false
-  - name: CpuLimit
-    type: string
-    description: CPU limit for the workload container (e.g. 1)
-    default: "500m"
-    required: false
-  - name: MemoryRequest
-    type: string
-    description: Memory request for the workload container (e.g. 128Mi)
-    default: "256Mi"
-    required: false
-  - name: MemoryLimit
-    type: string
-    description: Memory limit for the workload container (e.g. 512Mi)
-    default: "512Mi"
-    required: false
-  - name: CreateLiveness 
-    type: bool
-    description: Whether to create liveness on deployment
-    default: false
-    required: false
-  - name: TargetPort 
-    type: int
-    description: Target port of service, if not set service is not created
-    default: 0
-    required: false
-  - name: CreateHTTPRoute 
-    type: bool
-    description: Whether to create httproute resource, target port must be set
-    default: false
-    required: false
-  - name: CreateConfigMap
-    type: bool
-    description: Whether to create configmap
-    default: false
-    required: false
-  - name: ConfigMapPath
-    type: string
-    description: Mount path for the configmap volume
-    default: "/app/config"
-    required: false
-  - name: ConfigMapFile
-    type: string
-    description: File name inside the configmap (data key), e.g. config.yaml or config.toml
-    default: "config.yaml"
-    required: false
+  - name: SecretKeys
+    type: list
+    description: Secret keys to place in the generated Secret (values file); overrides SecretEnvName when set
   - name: SecretEnvName
     type: string
     description: Env var name and secret key created by CreateSecret
     default: "SECRET"
-    required: false
+  - name: ContainerPath
+    type: string
+    description: If set, creates a hostPath volume and volumeMount at the container path
+    default: ""
+  - name: ContainerPathHostPath
+    type: string
+    description: hostPath for ContainerPath, defaulting to /opt/<namespace>/<name>/config
+    default: ""
+  - name: Volumes
+    type: list
+    description: Additional volumes as {name, mountPath, hostPath, type, readOnly, configMap}
+  - name: Env
+    type: list
+    description: Container env as {name, value} or {name, secretName, secretKey}
+  - name: Command
+    type: list
+    description: Container command (replaces the image entrypoint)
+  - name: Args
+    type: list
+    description: Container args
+  - name: InitContainers
+    type: list
+    description: Init containers as {name, image, command, args, runAsUser, volumeMounts}
+  - name: RunAsUser
+    type: int
+    description: Pod securityContext runAsUser (0 omits it)
+    default: 0
+  - name: RunAsGroup
+    type: int
+    description: Pod securityContext runAsGroup (0 omits it)
+    default: 0
+  - name: Strategy
+    type: string
+    description: Deployment strategy type, e.g. Recreate for single-writer data
+    default: ""
+  - name: TerminationGracePeriodSeconds
+    type: int
+    description: Pod termination grace period in seconds (0 omits it)
+    default: 0
+  - name: UseGpu
+    type: bool
+    description: Whether to add GPU request to deployment
+    default: false
+  - name: CpuRequest
+    type: string
+    description: CPU request for the workload container (e.g. 250m); zero values are omitted
+    default: "0m"
+  - name: CpuLimit
+    type: string
+    description: CPU limit for the workload container (e.g. 1)
+    default: "500m"
+  - name: MemoryRequest
+    type: string
+    description: Memory request for the workload container (e.g. 128Mi); zero values are omitted
+    default: "256Mi"
+  - name: MemoryLimit
+    type: string
+    description: Memory limit for the workload container (e.g. 512Mi)
+    default: "512Mi"
+  - name: HealthPath
+    type: string
+    description: HTTP path used by the generated probes
+    default: "/"
+  - name: CreateLiveness
+    type: bool
+    description: Whether to create liveness on deployment
+    default: false
+  - name: CreateReadiness
+    type: bool
+    description: Whether to create a readiness probe on deployment
+    default: false
+  - name: TargetPort
+    type: int
+    description: Target port of service, if not set service is not created
+    default: 0
+  - name: CreateHTTPRoute
+    type: bool
+    description: Whether to create httproute resource, target port must be set
+    default: false
+  - name: ImagePolicyMarker
+    type: string
+    description: 'Setter marker value, e.g. "default:app-policy"; renders as {"$imagepolicy": ...} on the image'
+    default: ""
+  - name: CreateConfigMap
+    type: bool
+    description: Whether to create configmap
+    default: false
+  - name: ConfigMapPath
+    type: string
+    description: Mount path for the configmap volume
+    default: "/app/config"
+  - name: ConfigMapFile
+    type: string
+    description: File name inside the configmap (data key), e.g. config.yaml or config.toml
+    default: "config.yaml"
   - name: CreateConfigMapInitContainer
     type: bool
     description: Whether to create configmap init container to copy config map into another dir on startup
     default: false
-    required: false
   - name: TolerationKey
     type: string
     description: Key for toleration
@@ -98,7 +164,6 @@ values:
     type: bool
     description: Whether to create DB resources (deployment, service, secret)
     default: false
-    required: false
   - name: DBImage
     type: string
     description: Image to be used by DB
@@ -124,9 +189,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Name }}
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
+  labels:
+    app: {{ .Name }}
 spec:
   replicas: 1
+{{- if .Strategy }}
+  strategy:
+    type: {{ .Strategy }}
+{{- end }}
   selector:
     matchLabels:
       app: {{ .Name }}
@@ -135,106 +208,205 @@ spec:
       labels:
         app: {{ .Name }}
     spec:
+{{- if or .RunAsUser .RunAsGroup }}
+      securityContext:
+{{- if .RunAsUser }}
+        runAsUser: {{ .RunAsUser }}
+{{- end }}
+{{- if .RunAsGroup }}
+        runAsGroup: {{ .RunAsGroup }}
+{{- end }}
+{{- end }}
+{{- if .TerminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .TerminationGracePeriodSeconds }}
+{{- end }}
+{{- if or .InitContainers (and .CreateConfigMap .CreateConfigMapInitContainer) }}
+      initContainers:
+{{- range .InitContainers }}
+        - name: {{ .name }}
+          image: {{ .image }}
+{{- with .command }}
+          command:
+{{- range . }}
+            - {{ . }}
+{{- end }}
+{{- end }}
+{{- with .args }}
+          args:
+{{- range . }}
+            - {{ . }}
+{{- end }}
+{{- end }}
+{{- if .runAsUser }}
+          securityContext:
+            runAsUser: {{ .runAsUser }}
+{{- end }}
+{{- with .volumeMounts }}
+          volumeMounts:
+{{- range . }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if and .CreateConfigMap .CreateConfigMapInitContainer }}
+        - name: configmap-copy
+          image: busybox:latest
+          command: ["sh"]
+          args: ["-c","cp /kube/{{ .Name }}-config-cm/{{ .ConfigMapFile }} /kube/{{ .Name }}-config/{{ .ConfigMapFile }}"]
+          volumeMounts:
+            - mountPath: /kube/{{ .Name }}-config/
+              name: {{ .Name }}-config
+            - mountPath: /kube/{{ .Name }}-config-cm/
+              name: {{ .Name }}-config-cm
+{{- end }}
+{{- end }}
       containers:
       - name: {{ .Name }}
-        image: {{ .Image }}
-        {{- if or .CreateSecret .DBCreateSecret }}
+        image: {{ .Image }}{{- if .ImagePolicyMarker }} # {"$imagepolicy": "{{ .ImagePolicyMarker }}"}{{- end }}
+{{- if or .Command .Args }}
+{{- with .Command }}
+        command:
+{{- range . }}
+          - {{ . }}
+{{- end }}
+{{- end }}
+{{- with .Args }}
+        args:
+{{- range . }}
+          - {{ . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if or .Env .CreateSecret .DBCreateSecret }}
         env:
-        {{- if .CreateSecret }}
-        - name: {{ .SecretEnvName }}
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Name }}
-              key: {{ .SecretEnvName }}
-        {{- end }}
-        {{- if .DBCreateSecret }}
-        - name: DB_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Name }}-db
-              key: SECRET
-        {{- end }}
-        {{- end }}
-        {{- if or .ContainerPath .CreateConfigMap }}
+{{- range .Env }}
+{{- if .secretKey }}
+          - name: {{ .name }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ .secretName }}
+                key: {{ .secretKey }}
+{{- else }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+{{- if and .CreateSecret (not .SecretKeys) }}
+          - name: {{ .SecretEnvName }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Name }}
+                key: {{ .SecretEnvName }}
+{{- end }}
+{{- if .DBCreateSecret }}
+          - name: DB_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Name }}-db
+                key: SECRET
+{{- end }}
+{{- end }}
+{{- if .TargetPort }}
+        ports:
+          - name: http
+            containerPort: {{ .TargetPort }}
+{{- end }}
+{{- if or .Volumes .ContainerPath .CreateConfigMap }}
         volumeMounts:
-          {{- if .ContainerPath }}
+{{- if .ContainerPath }}
           - mountPath: {{ .ContainerPath }}
             name: {{ .Name }}-config
-          {{- end }}
-          {{- if and .CreateConfigMap (not .CreateConfigMapInitContainer) }}
+{{- end }}
+{{- range .Volumes }}
+          - mountPath: {{ .mountPath }}
+            name: {{ .name }}
+{{- if .readOnly }}
+            readOnly: true
+{{- end }}
+{{- end }}
+{{- if and .CreateConfigMap (not .CreateConfigMapInitContainer) }}
           - mountPath: {{ .ConfigMapPath }}
             name: {{ .Name }}-config-cm
-          {{- end }}
-        {{- end }}
-        {{- if or .UseGpu .CpuRequest .CpuLimit .MemoryRequest .MemoryLimit }}
+{{- end }}
+{{- end }}
+{{- if or .UseGpu (not (isZero .CpuRequest)) (not (isZero .CpuLimit)) (not (isZero .MemoryRequest)) (not (isZero .MemoryLimit)) }}
         resources:
-          {{- if or .CpuRequest .MemoryRequest }}
+{{- if or (not (isZero .CpuRequest)) (not (isZero .MemoryRequest)) }}
           requests:
-            {{- if .CpuRequest }}
+{{- if not (isZero .CpuRequest) }}
             cpu: {{ .CpuRequest }}
-            {{- end }}
-            {{- if .MemoryRequest }}
+{{- end }}
+{{- if not (isZero .MemoryRequest) }}
             memory: {{ .MemoryRequest }}
-            {{- end }}
-          {{- end }}
-          {{- if or .UseGpu .CpuLimit .MemoryLimit }}
+{{- end }}
+{{- end }}
+{{- if or .UseGpu (not (isZero .CpuLimit)) (not (isZero .MemoryLimit)) }}
           limits:
-            {{- if .CpuLimit }}
+{{- if not (isZero .CpuLimit) }}
             cpu: {{ .CpuLimit }}
-            {{- end }}
-            {{- if .MemoryLimit }}
+{{- end }}
+{{- if not (isZero .MemoryLimit) }}
             memory: {{ .MemoryLimit }}
-            {{- end }}
-            {{- if .UseGpu }}
+{{- end }}
+{{- if .UseGpu }}
             gpu.intel.com/i915: "1"
-            {{- end }}
-          {{- end }}
-        {{- end }}
-        {{- if and .CreateLiveness (ne .TargetPort 0) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if and .CreateReadiness (ne .TargetPort 0) }}
+        readinessProbe:
+          httpGet:
+            path: {{ .HealthPath }}
+            port: {{ .TargetPort }}
+{{- end }}
+{{- if and .CreateLiveness (ne .TargetPort 0) }}
         livenessProbe:
           httpGet:
-            path: /
+            path: {{ .HealthPath }}
             port: {{ .TargetPort }}
-        {{- end }}
-      {{- if and .TolerationKey .TolerationValue }}
+{{- end }}
+{{- if and .TolerationKey .TolerationValue }}
       tolerations:
       - key: "{{ .TolerationKey }}"
         operator: "Equal"
         value: "{{ .TolerationValue}}"
         effect: "NoSchedule"
-      {{- end }}
-      {{- if or .ContainerPath .CreateConfigMap }}
-      {{- if .CreateConfigMapInitContainer }}
-      initContainers:
-      - name: configmap-copy
-        image: busybox:latest
-        command: ["sh"]
-        args: ["-c","cp /kube/{{ .Name }}-config-cm/{{ .ConfigMapFile }} /kube/{{ .Name }}-config/{{ .ConfigMapFile }}"]
-        volumeMounts:
-          - mountPath: /kube/{{ .Name }}-config/
-            name: {{ .Name }}-config
-          - mountPath: /kube/{{ .Name }}-config-cm/
-            name: {{ .Name }}-config-cm
-      {{- end }}
+{{- end }}
+{{- if or .Volumes .ContainerPath .CreateConfigMap }}
       volumes:
-        {{- if .ContainerPath }}
+{{- if .ContainerPath }}
         - name: {{ .Name }}-config
           hostPath:
-            path: /opt/{{ .Namespace }}/{{ .Name }}/config
-        {{- end }}
-        {{- if .CreateConfigMap }}
+            path: {{ default (printf "/opt/%s/%s/config" .Namespace .Name) .ContainerPathHostPath }}
+            type: DirectoryOrCreate
+{{- end }}
+{{- range .Volumes }}
+        - name: {{ .name }}
+{{- if .configMap }}
+          configMap:
+            name: {{ .configMap }}
+{{- else }}
+          hostPath:
+            path: {{ .hostPath }}
+            type: {{ default "DirectoryOrCreate" .type }}
+{{- end }}
+{{- end }}
+{{- if .CreateConfigMap }}
         - name: {{ .Name }}-config-cm
           configMap:
             name: {{ .Name }}-config-cm
-        {{- end }}
-      {{- end }}
+{{- end }}
+{{- end }}
 {{- if .CreateConfigMap }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Name }}-config-cm
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
 data:
   {{ .ConfigMapFile }}: |
     # Insert Config here
@@ -245,12 +417,20 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: {{ .Name }}
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
   labels:
     app: {{ .Name }}
 type: Opaque
 stringData:
+{{- if .SecretKeys }}
+{{- range .SecretKeys }}
+  {{ . }}: Placeholder
+{{- end }}
+{{- else }}
   {{ .SecretEnvName }}: Placeholder
+{{- end }}
 {{- end }}
 {{- if ne .TargetPort 0 }}
 ---
@@ -258,32 +438,68 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Name }}
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
+  labels:
+    app: {{ .Name }}
 spec:
   selector:
     app: {{ .Name }}
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
       targetPort: {{ .TargetPort }}
 {{- end }}
-{{- if and .CreateHTTPRoute (ne .TargetPort 0) }}
+{{- if and .CreateHTTPRoute (ne .TargetPort 0) (not (isZero .Hostnames)) }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: {{ .Name }}
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
 spec:
   parentRefs:
-  - name: gateway
-    namespace: istio-system
-    sectionName: https
-  hostnames: ["{{ .Name }}.rossd.net"]
+{{- range .GatewayParents }}
+    - name: {{ .name }}
+      namespace: {{ .namespace }}
+      sectionName: {{ .sectionName }}
+{{- end }}
+  hostnames:
+{{- range .Hostnames }}
+    - {{ . | quote }}
+{{- end }}
   rules:
-  - backendRefs:
-    - name: {{ .Name }}
-      port: 80
+    - backendRefs:
+        - name: {{ .Name }}
+          port: 80
+{{- end }}
+{{- if and .CreateExternalRoute (ne .TargetPort 0) (not (isZero .Hostnames)) }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Name }}-ext
+{{- if .EmitNamespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
+spec:
+  parentRefs:
+    - name: gateway-external
+      namespace: istio-system
+      sectionName: https
+  hostnames:
+{{- range .Hostnames }}
+    - {{ . | quote }}
+{{- end }}
+  rules:
+    - backendRefs:
+        - name: {{ .ExternalBackendName }}
+          namespace: {{ .ExternalBackendNamespace }}
+          port: {{ .ExternalBackendPort }}
 {{- end }}
 {{- if .CreateDB }}
 ---
@@ -291,7 +507,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Name }}-db
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
   labels:
     used-by.app: {{ .Name }}
 spec:
@@ -308,37 +526,42 @@ spec:
       containers:
       - name: {{ .Name }}-db
         image: {{ .DBImage }}
-        {{- if .DBCreateSecret }}
+{{- if .DBCreateSecret }}
         env:
         - name: SECRET
           valueFrom:
             secretKeyRef:
               name: {{ .Name }}-db
               key: SECRET
-        {{- end }}
-        {{- if .DBContainerPath }}
+{{- end }}
+{{- if .DBContainerPath }}
         volumeMounts:
           - mountPath: {{ .DBContainerPath }}
             name: {{ .Name }}-db
-        {{- end }}
-      {{- if and .TolerationKey .TolerationValue }}
+{{- end }}
+{{- if and .TolerationKey .TolerationValue }}
       tolerations:
       - key: "{{ .TolerationKey }}"
         operator: "Equal"
         value: "{{ .TolerationValue}}"
         effect: "NoSchedule"
-      {{- end }}
+{{- end }}
+{{- if .DBContainerPath }}
       volumes:
         - name: {{ .Name }}-db
           hostPath:
             path: /opt/{{ .Namespace }}/{{ .Name }}/db
+            type: DirectoryOrCreate
+{{- end }}
 {{- if .DBCreateSecret }}
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: {{ .Name }}-db
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
   labels:
     app: {{ .Name }}-db
 type: Opaque
@@ -351,7 +574,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Name }}-db
+{{- if .EmitNamespace }}
   namespace: {{ .Namespace }}
+{{- end }}
 spec:
   selector:
     app: {{ .Name }}-db
